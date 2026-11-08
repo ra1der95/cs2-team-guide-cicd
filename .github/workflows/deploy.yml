@@ -1,0 +1,50 @@
+name: Site CI and Pages
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: github-pages
+  cancel-in-progress: false
+jobs:
+  validate:
+    name: Validate and build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - name: Prepare local gallery images
+        run: |
+          mkdir -p assets/images
+          curl --fail --location --retry 3 'https://images.unsplash.com/photo-1687662604688-0ead112c346a?fm=jpg&w=1300&q=80' -o assets/images/team-setup.jpg
+          curl --fail --location --retry 3 'https://images.unsplash.com/photo-1726442131094-4fe2fa8e7d94?fm=jpg&w=1300&q=80' -o assets/images/gaming-pc.jpg
+          curl --fail --location --retry 3 'https://images.unsplash.com/photo-1547394765-185e1e68f34e?fm=jpg&w=1300&q=80' -o assets/images/keyboard-focus.jpg
+      - name: Validate site
+        run: python3 scripts/validate_site.py
+      - name: Prepare deployment directory
+        run: |
+          mkdir _site
+          cp index.html style.css main.js _site/
+          cp -r assets _site/
+      - uses: actions/upload-pages-artifact@v4
+        with:
+          path: _site
+  deploy:
+    name: Deploy GitHub Pages
+    if: github.event_name != 'pull_request' && github.event.repository.private == false
+    needs: validate
+    runs-on: ubuntu-latest
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/configure-pages@v5
+      - name: Publish site
+        id: deployment
+        uses: actions/deploy-pages@v4
