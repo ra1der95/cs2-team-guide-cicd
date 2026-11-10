@@ -27,7 +27,7 @@ jobs:
       - name: Prepare deployment directory
         run: |
           mkdir _site
-          cp index.html style.css main.js _site/
+          cp index.html style.css main.js *.jpg _site/
           cp -r assets _site/
       - uses: actions/upload-pages-artifact@v4
         with:
